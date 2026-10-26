@@ -16,14 +16,10 @@ const emptyForm = {
 function StudentManagement() {
 
     const navigate = useNavigate();
-    
-    // Refs for closing dropdowns on outside click
     const dropdownRef = useRef(null);
     const notificationRef = useRef(null);
 
-    // =========================
     // SESSION USER
-    // =========================
     let user = null;
     try {
         user = JSON.parse(sessionStorage.getItem("studentUser") || "null");
@@ -31,9 +27,7 @@ function StudentManagement() {
         user = null;
     }
 
-    // =========================
     // STATE
-    // =========================
     const [students, setStudents] = useState([]);
     const [formData, setFormData] = useState(emptyForm);
     const [editingId, setEditingId] = useState(null);
@@ -44,13 +38,9 @@ function StudentManagement() {
     const [error, setError] = useState("");
     const [activeTab, setActiveTab] = useState("dashboard");
 
-    // Dropdown states
     const [menuOpen, setMenuOpen] = useState(false);
     const [notifOpen, setNotifOpen] = useState(false);
 
-    // =========================
-    // NOTIFICATIONS STATE
-    // =========================
     const [notifications, setNotifications] = useState([
         { id: 1, text: "Welcome to EduManage System!", time: "Just now", read: false }
     ]);
@@ -71,27 +61,15 @@ function StudentManagement() {
         setNotifications(prev => prev.map(n => ({ ...n, read: true })));
     };
 
-    // =========================
-    // CLOSE DROPDOWNS ON CLICK OUTSIDE
-    // =========================
     useEffect(() => {
         function handleClickOutside(event) {
-            if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
-                setMenuOpen(false);
-            }
-            if (notificationRef.current && !notificationRef.current.contains(event.target)) {
-                setNotifOpen(false);
-            }
+            if (dropdownRef.current && !dropdownRef.current.contains(event.target)) setMenuOpen(false);
+            if (notificationRef.current && !notificationRef.current.contains(event.target)) setNotifOpen(false);
         }
         document.addEventListener("mousedown", handleClickOutside);
-        return () => {
-            document.removeEventListener("mousedown", handleClickOutside);
-        };
+        return () => document.removeEventListener("mousedown", handleClickOutside);
     }, []);
 
-    // =========================
-    // LOGOUT & SWITCH
-    // =========================
     const handleLogout = () => {
         if (!window.confirm("Are you sure you want to logout?")) return;
         sessionStorage.removeItem("studentUser");
@@ -105,14 +83,16 @@ function StudentManagement() {
         navigate("/register", { replace: true });
     };
 
-    // =========================
-    // GET ALL STUDENTS
-    // =========================
+    // ==========================================
+    // YAHAN CHANGE HUA HAI (GET STUDENTS)
+    // ==========================================
     const fetchStudents = async () => {
+        if (!user) return;
         try {
             setLoading(true);
             setError("");
-            const response = await axios.get(API_URL);
+            // Ab hum user.id bhej rahe hain URL mein
+            const response = await axios.get(`${API_URL}/user/${user.id}`);
             setStudents(response.data);
         } catch (err) {
             console.error(err);
@@ -124,11 +104,8 @@ function StudentManagement() {
 
     useEffect(() => {
         fetchStudents();
-    }, []);
+    }, [user]);
 
-    // =========================
-    // FORM HANDLING
-    // =========================
     const handleChange = (e) => {
         const { name, value } = e.target;
         setFormData((previous) => ({ ...previous, [name]: value }));
@@ -162,6 +139,9 @@ function StudentManagement() {
         setError("");
     };
 
+    // ==========================================
+    // YAHAN CHANGE HUA HAI (POST STUDENT)
+    // ==========================================
     const handleSubmit = async (e) => {
         e.preventDefault();
         if (!formData.name.trim() || !formData.email.trim() || !formData.course.trim()) {
@@ -176,7 +156,8 @@ function StudentManagement() {
                 email: formData.email.trim(),
                 age: formData.age === "" ? null : Number(formData.age),
                 course: formData.course.trim(),
-                phone: formData.phone.trim()
+                phone: formData.phone.trim(),
+                userId: user.id // <--- YEH LINE SAB SE ZAROORI HAI
             };
             
             if (editingId !== null) {
@@ -210,9 +191,6 @@ function StudentManagement() {
         }
     };
 
-    // =========================
-    // FILTER & STATS
-    // =========================
     const filteredStudents = useMemo(() => {
         const searchText = search.toLowerCase().trim();
         if (!searchText) return students;
@@ -232,13 +210,8 @@ function StudentManagement() {
         : "0";
     const studentsWithPhone = students.filter(s => s.phone && s.phone.trim() !== "").length;
 
-    // =========================
-    // RENDER
-    // =========================
     return (
         <div className="dashboard">
-
-            {/* ================= SIDEBAR ================= */}
             <aside className="sidebar">
                 <div className="brand">
                     <div className="brand-icon">🎓</div>
@@ -249,21 +222,11 @@ function StudentManagement() {
                 </div>
 
                 <nav className="navigation">
-                    <button className={`nav-item ${activeTab === 'dashboard' ? 'active' : ''}`} onClick={() => setActiveTab('dashboard')}>
-                        <span>📊</span> Dashboard
-                    </button>
-                    <button className={`nav-item ${activeTab === 'students' ? 'active' : ''}`} onClick={() => setActiveTab('students')}>
-                        <span>👨‍🎓</span> Students
-                    </button>
-                    <button className={`nav-item ${activeTab === 'courses' ? 'active' : ''}`} onClick={() => setActiveTab('courses')}>
-                        <span>📚</span> Courses
-                    </button>
-                    <button className={`nav-item ${activeTab === 'reports' ? 'active' : ''}`} onClick={() => setActiveTab('reports')}>
-                        <span>📈</span> Reports
-                    </button>
-                    <button className={`nav-item ${activeTab === 'settings' ? 'active' : ''}`} onClick={() => setActiveTab('settings')}>
-                        <span>⚙️</span> Settings
-                    </button>
+                    <button className={`nav-item ${activeTab === 'dashboard' ? 'active' : ''}`} onClick={() => setActiveTab('dashboard')}><span>📊</span> Dashboard</button>
+                    <button className={`nav-item ${activeTab === 'students' ? 'active' : ''}`} onClick={() => setActiveTab('students')}><span>👨‍🎓</span> Students</button>
+                    <button className={`nav-item ${activeTab === 'courses' ? 'active' : ''}`} onClick={() => setActiveTab('courses')}><span>📚</span> Courses</button>
+                    <button className={`nav-item ${activeTab === 'reports' ? 'active' : ''}`} onClick={() => setActiveTab('reports')}><span>📈</span> Reports</button>
+                    <button className={`nav-item ${activeTab === 'settings' ? 'active' : ''}`} onClick={() => setActiveTab('settings')}><span>⚙️</span> Settings</button>
                 </nav>
 
                 <div className="sidebar-bottom">
@@ -278,10 +241,7 @@ function StudentManagement() {
                 </div>
             </aside>
 
-            {/* ================= MAIN ================= */}
             <main className="main-content">
-
-                {/* ================= TOP BAR ================= */}
                 <header className="topbar">
                     <div>
                         <h1>{activeTab.charAt(0).toUpperCase() + activeTab.slice(1)}</h1>
@@ -295,21 +255,11 @@ function StudentManagement() {
                     </div>
 
                     <div className="topbar-actions">
-                        
-                        {/* ================= NOTIFICATION BELL ================= */}
                         <div className="notification-wrapper" ref={notificationRef}>
-                            <div 
-                                className="notification" 
-                                onClick={() => {
-                                    setNotifOpen(!notifOpen);
-                                    if (!notifOpen) markAllAsRead(); // Mark read when opened
-                                }}
-                            >
+                            <div className="notification" onClick={() => { setNotifOpen(!notifOpen); if (!notifOpen) markAllAsRead(); }}>
                                 🔔
                                 {unreadCount > 0 && <span className="badge">{unreadCount}</span>}
                             </div>
-
-                            {/* Notification Dropdown */}
                             {notifOpen && (
                                 <div className="notification-dropdown">
                                     <div className="notif-header">
@@ -335,12 +285,9 @@ function StudentManagement() {
                             )}
                         </div>
 
-                        {/* ================= PROFILE DROPDOWN ================= */}
                         <div className="profile" ref={dropdownRef}>
                             <button className="profile-trigger" onClick={() => setMenuOpen((v) => !v)}>
-                                <div className="avatar">
-                                    {user?.name?.charAt(0)?.toUpperCase() || "U"}
-                                </div>
+                                <div className="avatar">{user?.name?.charAt(0)?.toUpperCase() || "U"}</div>
                                 <div className="profile-info">
                                     <strong>{user?.name || "User"}</strong>
                                     <small>{user?.role || "USER"}</small>
@@ -351,37 +298,27 @@ function StudentManagement() {
                             {menuOpen && (
                                 <div className="profile-dropdown">
                                     <div className="dropdown-user">
-                                        <div className="dropdown-avatar">
-                                            {user?.name?.charAt(0)?.toUpperCase() || "U"}
-                                        </div>
+                                        <div className="dropdown-avatar">{user?.name?.charAt(0)?.toUpperCase() || "U"}</div>
                                         <div className="dropdown-user-info">
                                             <strong>{user?.name || "User"}</strong>
                                             <small>{user?.email || "user@example.com"}</small>
                                         </div>
                                     </div>
                                     <div className="dropdown-divider"></div>
-                                    <button className="dropdown-item" onClick={handleSwitchAccount}>
-                                        <span className="dropdown-icon">🔄</span> Switch Account
-                                    </button>
-                                    <button className="dropdown-item danger" onClick={handleLogout}>
-                                        <span className="dropdown-icon">🚪</span> Logout
-                                    </button>
+                                    <button className="dropdown-item" onClick={handleSwitchAccount}><span className="dropdown-icon">🔄</span> Switch Account</button>
+                                    <button className="dropdown-item danger" onClick={handleLogout}><span className="dropdown-icon">🚪</span> Logout</button>
                                 </div>
                             )}
                         </div>
-
                     </div>
                 </header>
 
-                {/* ================= ERROR ================= */}
                 {error && (
                     <div className="error-message">
                         <span>⚠️</span><span>{error}</span>
                         <button onClick={() => setError("")}>×</button>
                     </div>
                 )}
-
-                {/* ================= TAB CONTENT ================= */}
 
                 {activeTab === 'dashboard' && (
                     <section className="stats-grid">
@@ -443,32 +380,15 @@ function StudentManagement() {
                                 </div>
                                 <form onSubmit={handleSubmit}>
                                     <div className="form-grid">
-                                        <div className="input-group">
-                                            <label>Student Name *</label>
-                                            <input type="text" name="name" value={formData.name} onChange={handleChange} placeholder="Enter student name" />
-                                        </div>
-                                        <div className="input-group">
-                                            <label>Email *</label>
-                                            <input type="email" name="email" value={formData.email} onChange={handleChange} placeholder="student@example.com" />
-                                        </div>
-                                        <div className="input-group">
-                                            <label>Age</label>
-                                            <input type="number" name="age" min="1" max="100" value={formData.age} onChange={handleChange} placeholder="Enter age" />
-                                        </div>
-                                        <div className="input-group">
-                                            <label>Course *</label>
-                                            <input type="text" name="course" value={formData.course} onChange={handleChange} placeholder="e.g. BS Computer Science" />
-                                        </div>
-                                        <div className="input-group full-width">
-                                            <label>Phone</label>
-                                            <input type="text" name="phone" value={formData.phone} onChange={handleChange} placeholder="Enter phone number" />
-                                        </div>
+                                        <div className="input-group"><label>Student Name *</label><input type="text" name="name" value={formData.name} onChange={handleChange} placeholder="Enter student name" /></div>
+                                        <div className="input-group"><label>Email *</label><input type="email" name="email" value={formData.email} onChange={handleChange} placeholder="student@example.com" /></div>
+                                        <div className="input-group"><label>Age</label><input type="number" name="age" min="1" max="100" value={formData.age} onChange={handleChange} placeholder="Enter age" /></div>
+                                        <div className="input-group"><label>Course *</label><input type="text" name="course" value={formData.course} onChange={handleChange} placeholder="e.g. BS Computer Science" /></div>
+                                        <div className="input-group full-width"><label>Phone</label><input type="text" name="phone" value={formData.phone} onChange={handleChange} placeholder="Enter phone number" /></div>
                                     </div>
                                     <div className="form-actions">
                                         <button type="button" className="cancel-button" onClick={closeForm}>Cancel</button>
-                                        <button type="submit" className="save-button" disabled={saving}>
-                                            {saving ? "Saving..." : editingId !== null ? "Update Student" : "Save Student"}
-                                        </button>
+                                        <button type="submit" className="save-button" disabled={saving}>{saving ? "Saving..." : editingId !== null ? "Update Student" : "Save Student"}</button>
                                     </div>
                                 </form>
                             </div>
@@ -488,10 +408,7 @@ function StudentManagement() {
                             </div>
 
                             {loading ? (
-                                <div className="loading-state">
-                                    <div className="spinner"></div>
-                                    <p>Loading students...</p>
-                                </div>
+                                <div className="loading-state"><div className="spinner"></div><p>Loading students...</p></div>
                             ) : filteredStudents.length === 0 ? (
                                 <div className="empty-state">
                                     <div className="empty-icon">👨‍🎓</div>
@@ -502,11 +419,7 @@ function StudentManagement() {
                             ) : (
                                 <div className="table-wrapper">
                                     <table>
-                                        <thead>
-                                            <tr>
-                                                <th>#</th><th>Student</th><th>Email</th><th>Course</th><th>Age</th><th>Phone</th><th>Actions</th>
-                                            </tr>
-                                        </thead>
+                                        <thead><tr><th>#</th><th>Student</th><th>Email</th><th>Course</th><th>Age</th><th>Phone</th><th>Actions</th></tr></thead>
                                         <tbody>
                                             {filteredStudents.map((student, index) => (
                                                 <tr key={student.id}>
@@ -514,10 +427,7 @@ function StudentManagement() {
                                                     <td>
                                                         <div className="student-cell">
                                                             <div className="student-avatar">{student.name?.charAt(0)?.toUpperCase() || "S"}</div>
-                                                            <div>
-                                                                <strong>{student.name}</strong>
-                                                                <small>ID #{student.id}</small>
-                                                            </div>
+                                                            <div><strong>{student.name}</strong><small>ID #{student.id}</small></div>
                                                         </div>
                                                     </td>
                                                     <td><span className="email-text">{student.email}</span></td>
@@ -542,27 +452,16 @@ function StudentManagement() {
 
                 {activeTab === 'courses' && (
                     <section className="students-section">
-                        <div className="section-header">
-                            <div>
-                                <h2>Active Courses</h2>
-                                <p>List of all courses based on registered students.</p>
-                            </div>
-                        </div>
+                        <div className="section-header"><div><h2>Active Courses</h2><p>List of all courses based on registered students.</p></div></div>
                         <div className="stats-grid" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))' }}>
                             {uniqueCourses.length === 0 ? (
-                                <div className="empty-state" style={{ gridColumn: '1 / -1' }}>
-                                    <div className="empty-icon">📚</div>
-                                    <h3>No courses found</h3>
-                                    <p>Add students to see their courses here.</p>
-                                </div>
+                                <div className="empty-state" style={{ gridColumn: '1 / -1' }}><div className="empty-icon">📚</div><h3>No courses found</h3><p>Add students to see their courses here.</p></div>
                             ) : (
                                 uniqueCourses.map((course, index) => (
                                     <div className="stat-card" key={index} style={{ flexDirection: 'column', alignItems: 'flex-start' }}>
                                         <div className="stat-icon courses" style={{ marginBottom: '10px' }}>📚</div>
                                         <strong style={{ fontSize: '18px', color: '#111827' }}>{course}</strong>
-                                        <span style={{ fontSize: '12px', color: '#6b7280', marginTop: '4px' }}>
-                                            {students.filter(s => s.course === course).length} Students enrolled
-                                        </span>
+                                        <span style={{ fontSize: '12px', color: '#6b7280', marginTop: '4px' }}>{students.filter(s => s.course === course).length} Students enrolled</span>
                                     </div>
                                 ))
                             )}
@@ -572,12 +471,7 @@ function StudentManagement() {
 
                 {activeTab === 'reports' && (
                     <section className="students-section">
-                        <div className="section-header">
-                            <div>
-                                <h2>Reports Overview</h2>
-                                <p>A summary of your student data.</p>
-                            </div>
-                        </div>
+                        <div className="section-header"><div><h2>Reports Overview</h2><p>A summary of your student data.</p></div></div>
                         <div className="table-card" style={{ padding: '30px' }}>
                             <h3 style={{ marginTop: 0, color: '#111827' }}>System Summary</h3>
                             <p style={{ color: '#6b7280', fontSize: '14px', lineHeight: '1.8' }}>
@@ -586,9 +480,7 @@ function StudentManagement() {
                                 Out of all students, <strong>{studentsWithPhone}</strong> have provided their phone numbers.
                             </p>
                             <div style={{ marginTop: '20px', padding: '15px', background: '#f9fafb', borderRadius: '10px', border: '1px solid #e5e7eb' }}>
-                                <p style={{ margin: 0, fontSize: '13px', color: '#4b5563' }}>
-                                    📌 <strong>Tip:</strong> Use the Students tab to add, edit, or remove students. The statistics update automatically!
-                                </p>
+                                <p style={{ margin: 0, fontSize: '13px', color: '#4b5563' }}>📌 <strong>Tip:</strong> Use the Students tab to add, edit, or remove students. The statistics update automatically!</p>
                             </div>
                         </div>
                     </section>
@@ -596,40 +488,22 @@ function StudentManagement() {
 
                 {activeTab === 'settings' && (
                     <section className="students-section">
-                        <div className="section-header">
-                            <div>
-                                <h2>Account Settings</h2>
-                                <p>Manage your account details and session.</p>
-                            </div>
-                        </div>
+                        <div className="section-header"><div><h2>Account Settings</h2><p>Manage your account details and session.</p></div></div>
                         <div className="table-card" style={{ padding: '30px' }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '20px', marginBottom: '30px' }}>
-                                <div className="avatar" style={{ width: '60px', height: '60px', fontSize: '24px', borderRadius: '15px' }}>
-                                    {user?.name?.charAt(0)?.toUpperCase() || "U"}
-                                </div>
+                                <div className="avatar" style={{ width: '60px', height: '60px', fontSize: '24px', borderRadius: '15px' }}>{user?.name?.charAt(0)?.toUpperCase() || "U"}</div>
                                 <div>
                                     <h3 style={{ margin: 0, color: '#111827' }}>{user?.name || "User"}</h3>
                                     <p style={{ margin: '5px 0 0', color: '#6b7280' }}>{user?.email || "email@example.com"}</p>
-                                    <span className="course-badge" style={{ marginTop: '8px', display: 'inline-block' }}>
-                                        {user?.role || "USER"}
-                                    </span>
+                                    <span className="course-badge" style={{ marginTop: '8px', display: 'inline-block' }}>{user?.role || "USER"}</span>
                                 </div>
                             </div>
-
                             <div className="dropdown-divider" style={{ margin: '20px 0' }}></div>
-
                             <h4 style={{ margin: '0 0 15px', color: '#111827' }}>Danger Zone</h4>
-                            <button 
-                                className="save-button" 
-                                style={{ background: '#ef4444', padding: '12px 20px', height: 'auto' }}
-                                onClick={handleLogout}
-                            >
-                                🚪 Logout from Account
-                            </button>
+                            <button className="save-button" style={{ background: '#ef4444', padding: '12px 20px', height: 'auto' }} onClick={handleLogout}>🚪 Logout from Account</button>
                         </div>
                     </section>
                 )}
-
             </main>
         </div>
     );
