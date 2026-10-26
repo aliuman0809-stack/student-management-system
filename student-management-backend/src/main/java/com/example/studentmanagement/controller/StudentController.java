@@ -10,105 +10,39 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/students")
-@CrossOrigin(origins = "http://localhost:5173")
+@CrossOrigin(origins = "*")
 public class StudentController {
 
     private final StudentService studentService;
-
-
-    // ==========================================
-    // CONSTRUCTOR
-    // ==========================================
 
     public StudentController(StudentService studentService) {
         this.studentService = studentService;
     }
 
-
-    // ==========================================
-    // CREATE STUDENT
-    // POST /api/students
-    // ==========================================
+    // Naya Endpoint: Sirf us user ke students layega
+    @GetMapping("/user/{userId}")
+    public ResponseEntity<List<Student>> getStudentsByUserId(@PathVariable Long userId) {
+        return ResponseEntity.ok(studentService.getStudentsByUserId(userId));
+    }
 
     @PostMapping
-    public ResponseEntity<Student> createStudent(
-            @RequestBody Student student
-    ) {
-
-        Student savedStudent =
-                studentService.createStudent(student);
-
-        return new ResponseEntity<>(
-                savedStudent,
-                HttpStatus.CREATED
-        );
+    public ResponseEntity<Student> createStudent(@RequestBody Student student) {
+        return new ResponseEntity<>(studentService.createStudent(student), HttpStatus.CREATED);
     }
-
-
-    // ==========================================
-    // GET ALL STUDENTS
-    // GET /api/students
-    // ==========================================
-
-    @GetMapping
-    public ResponseEntity<List<Student>> getAllStudents() {
-
-        List<Student> students =
-                studentService.getAllStudents();
-
-        return ResponseEntity.ok(students);
-    }
-
-
-    // ==========================================
-    // GET STUDENT BY ID
-    // GET /api/students/{id}
-    // ==========================================
 
     @GetMapping("/{id}")
-    public ResponseEntity<Student> getStudentById(
-            @PathVariable Long id
-    ) {
-
-        Student student =
-                studentService.getStudentById(id);
-
-        return ResponseEntity.ok(student);
+    public ResponseEntity<Student> getStudentById(@PathVariable Long id) {
+        return ResponseEntity.ok(studentService.getStudentById(id));
     }
-
-
-    // ==========================================
-    // UPDATE STUDENT
-    // PUT /api/students/{id}
-    // ==========================================
 
     @PutMapping("/{id}")
-    public ResponseEntity<Student> updateStudent(
-            @PathVariable Long id,
-            @RequestBody Student student
-    ) {
-
-        Student updatedStudent =
-                studentService.updateStudent(id, student);
-
-        return ResponseEntity.ok(updatedStudent);
+    public ResponseEntity<Student> updateStudent(@PathVariable Long id, @RequestBody Student student) {
+        return ResponseEntity.ok(studentService.updateStudent(id, student));
     }
 
-
-    // ==========================================
-    // DELETE STUDENT
-    // DELETE /api/students/{id}
-    // ==========================================
-
     @DeleteMapping("/{id}")
-    public ResponseEntity<String> deleteStudent(
-            @PathVariable Long id
-    ) {
-
+    public ResponseEntity<String> deleteStudent(@PathVariable Long id) {
         studentService.deleteStudent(id);
-
-        return ResponseEntity.ok(
-                "Student deleted successfully"
-        );
+        return ResponseEntity.ok("Student deleted successfully");
     }
 }
