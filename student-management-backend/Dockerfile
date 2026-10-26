@@ -2,13 +2,11 @@
 FROM maven:3.9-eclipse-temurin-17 AS build
 WORKDIR /app
 
-# 1. Pehle pom.xml copy karein
-COPY pom.xml .
+# Exact path batayein ke pom.xml aur src kahan hain
+COPY student-management-backend/pom.xml .
+COPY student-management-backend/src ./src
 
-# 2. Phir src folder copy karein
-COPY src ./src
-
-# 3. Ab Maven build chalayein
+# Ab Maven build chalayein
 RUN mvn clean package -DskipTests
 
 # Stage 2: Run
