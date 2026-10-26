@@ -14,18 +14,18 @@ const emptyForm = {
 };
 
 function StudentManagement() {
-
     const navigate = useNavigate();
     const dropdownRef = useRef(null);
     const notificationRef = useRef(null);
 
-    // SESSION USER
-    let user = null;
-    try {
-        user = JSON.parse(sessionStorage.getItem("studentUser") || "null");
-    } catch {
-        user = null;
-    }
+    // SESSION USER (Yeh sirf ek baar load hoga)
+    const [user] = useState(() => {
+        try {
+            return JSON.parse(sessionStorage.getItem("studentUser") || "null");
+        } catch {
+            return null;
+        }
+    });
 
     // STATE
     const [students, setStudents] = useState([]);
@@ -45,6 +45,38 @@ function StudentManagement() {
         { id: 1, text: "Welcome to EduManage System!", time: "Just now", read: false }
     ]);
 
+    // =========================
+    // FETCH STUDENTS FUNCTION
+    // =========================
+    const fetchStudents = async () => {
+        if (!user) return;
+        try {
+            setLoading(true);
+            setError("");
+            // User ki ID ke mutabiq data fetch ho raha hai
+            const response = await axios.get(`${API_URL}/user/${user.id}`);
+            setStudents(response.data);
+        } catch (err) {
+            console.error(err);
+            setError("Unable to load students. Make sure backend is running.");
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // YEH EFFECT SIRF EK BAAR CHALEGA (BLINK FIX)
+    useEffect(() => {
+        if (!user) {
+            navigate("/login");
+        } else {
+            fetchStudents();
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []); 
+
+    // =========================
+    // NOTIFICATIONS
+    // =========================
     const addNotification = (text) => {
         const newNotif = {
             id: Date.now(),
@@ -56,11 +88,13 @@ function StudentManagement() {
     };
 
     const unreadCount = notifications.filter(n => !n.read).length;
-
     const markAllAsRead = () => {
         setNotifications(prev => prev.map(n => ({ ...n, read: true })));
     };
 
+    // =========================
+    // CLOSE DROPDOWNS
+    // =========================
     useEffect(() => {
         function handleClickOutside(event) {
             if (dropdownRef.current && !dropdownRef.current.contains(event.target)) setMenuOpen(false);
@@ -70,6 +104,9 @@ function StudentManagement() {
         return () => document.removeEventListener("mousedown", handleClickOutside);
     }, []);
 
+    // =========================
+    // LOGOUT
+    // =========================
     const handleLogout = () => {
         if (!window.confirm("Are you sure you want to logout?")) return;
         sessionStorage.removeItem("studentUser");
@@ -83,29 +120,9 @@ function StudentManagement() {
         navigate("/register", { replace: true });
     };
 
-    // ==========================================
-    // YAHAN CHANGE HUA HAI (GET STUDENTS)
-    // ==========================================
-    const fetchStudents = async () => {
-        if (!user) return;
-        try {
-            setLoading(true);
-            setError("");
-            // Ab hum user.id bhej rahe hain URL mein
-            const response = await axios.get(`${API_URL}/user/${user.id}`);
-            setStudents(response.data);
-        } catch (err) {
-            console.error(err);
-            setError("Unable to load students. Make sure backend is running.");
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    useEffect(() => {
-        fetchStudents();
-    }, [user]);
-
+    // =========================
+    // FORM HANDLING
+    // =========================
     const handleChange = (e) => {
         const { name, value } = e.target;
         setFormData((previous) => ({ ...previous, [name]: value }));
@@ -139,9 +156,9 @@ function StudentManagement() {
         setError("");
     };
 
-    // ==========================================
-    // YAHAN CHANGE HUA HAI (POST STUDENT)
-    // ==========================================
+    // =========================
+    // SUBMIT (ADD / UPDATE)
+    // =========================
     const handleSubmit = async (e) => {
         e.preventDefault();
         if (!formData.name.trim() || !formData.email.trim() || !formData.course.trim()) {
@@ -157,7 +174,7 @@ function StudentManagement() {
                 age: formData.age === "" ? null : Number(formData.age),
                 course: formData.course.trim(),
                 phone: formData.phone.trim(),
-                userId: user.id // <--- YEH LINE SAB SE ZAROORI HAI
+                userId: user.id // <--- Data isolation ke liye zaroori hai
             };
             
             if (editingId !== null) {
@@ -177,6 +194,9 @@ function StudentManagement() {
         }
     };
 
+    // =========================
+    // DELETE
+    // =========================
     const handleDelete = async (id) => {
         if (!window.confirm("Delete this student?")) return;
         const studentName = students.find(s => s.id === id)?.name || "Unknown";
@@ -191,6 +211,9 @@ function StudentManagement() {
         }
     };
 
+    // =========================
+    // SEARCH & STATS
+    // =========================
     const filteredStudents = useMemo(() => {
         const searchText = search.toLowerCase().trim();
         if (!searchText) return students;
@@ -210,6 +233,9 @@ function StudentManagement() {
         : "0";
     const studentsWithPhone = students.filter(s => s.phone && s.phone.trim() !== "").length;
 
+    // =========================
+    // RENDER
+    // =========================
     return (
         <div className="dashboard">
             <aside className="sidebar">
@@ -322,60 +348,24 @@ function StudentManagement() {
 
                 {activeTab === 'dashboard' && (
                     <section className="stats-grid">
-                        <div className="stat-card">
-                            <div className="stat-content">
-                                <span className="stat-label">Total Students</span>
-                                <strong className="stat-number">{totalStudents}</strong>
-                                <span className="stat-description">Registered students</span>
-                            </div>
-                            <div className="stat-icon students">👨‍🎓</div>
-                        </div>
-                        <div className="stat-card">
-                            <div className="stat-content">
-                                <span className="stat-label">Total Courses</span>
-                                <strong className="stat-number">{totalCourses}</strong>
-                                <span className="stat-description">Active courses</span>
-                            </div>
-                            <div className="stat-icon courses">📚</div>
-                        </div>
-                        <div className="stat-card">
-                            <div className="stat-content">
-                                <span className="stat-label">Average Age</span>
-                                <strong className="stat-number">{averageAge}</strong>
-                                <span className="stat-description">Years</span>
-                            </div>
-                            <div className="stat-icon age">🎂</div>
-                        </div>
-                        <div className="stat-card">
-                            <div className="stat-content">
-                                <span className="stat-label">Contact Available</span>
-                                <strong className="stat-number">{studentsWithPhone}</strong>
-                                <span className="stat-description">Students with phone</span>
-                            </div>
-                            <div className="stat-icon contact">📱</div>
-                        </div>
+                        <div className="stat-card"><div className="stat-content"><span className="stat-label">Total Students</span><strong className="stat-number">{totalStudents}</strong><span className="stat-description">Registered students</span></div><div className="stat-icon students">👨‍🎓</div></div>
+                        <div className="stat-card"><div className="stat-content"><span className="stat-label">Total Courses</span><strong className="stat-number">{totalCourses}</strong><span className="stat-description">Active courses</span></div><div className="stat-icon courses">📚</div></div>
+                        <div className="stat-card"><div className="stat-content"><span className="stat-label">Average Age</span><strong className="stat-number">{averageAge}</strong><span className="stat-description">Years</span></div><div className="stat-icon age">🎂</div></div>
+                        <div className="stat-card"><div className="stat-content"><span className="stat-label">Contact Available</span><strong className="stat-number">{studentsWithPhone}</strong><span className="stat-description">Students with phone</span></div><div className="stat-icon contact">📱</div></div>
                     </section>
                 )}
 
                 {activeTab === 'students' && (
                     <section id="students-section" className="students-section">
                         <div className="section-header">
-                            <div>
-                                <h2>Student Directory</h2>
-                                <p>View and manage all registered students.</p>
-                            </div>
-                            <button className="add-button" onClick={openAddForm}>
-                                <span>＋</span> Add Student
-                            </button>
+                            <div><h2>Student Directory</h2><p>View and manage all registered students.</p></div>
+                            <button className="add-button" onClick={openAddForm}><span>＋</span> Add Student</button>
                         </div>
 
                         {showForm && (
                             <div className="form-card">
                                 <div className="form-header">
-                                    <div>
-                                        <h3>{editingId !== null ? "Update Student" : "Add New Student"}</h3>
-                                        <p>Enter the student's information below.</p>
-                                    </div>
+                                    <div><h3>{editingId !== null ? "Update Student" : "Add New Student"}</h3><p>Enter the student's information below.</p></div>
                                     <button className="close-button" onClick={closeForm}>×</button>
                                 </div>
                                 <form onSubmit={handleSubmit}>
@@ -396,15 +386,8 @@ function StudentManagement() {
 
                         <div className="table-card">
                             <div className="table-toolbar">
-                                <div>
-                                    <h3>Student List</h3>
-                                    <span>{filteredStudents.length} students</span>
-                                </div>
-                                <div className="search-box">
-                                    <span>🔍</span>
-                                    <input type="text" placeholder="Search students..." value={search} onChange={(e) => setSearch(e.target.value)} />
-                                    {search && <button onClick={() => setSearch("")}>×</button>}
-                                </div>
+                                <div><h3>Student List</h3><span>{filteredStudents.length} students</span></div>
+                                <div className="search-box"><span>🔍</span><input type="text" placeholder="Search students..." value={search} onChange={(e) => setSearch(e.target.value)} />{search && <button onClick={() => setSearch("")}>×</button>}</div>
                             </div>
 
                             {loading ? (
@@ -454,9 +437,7 @@ function StudentManagement() {
                     <section className="students-section">
                         <div className="section-header"><div><h2>Active Courses</h2><p>List of all courses based on registered students.</p></div></div>
                         <div className="stats-grid" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))' }}>
-                            {uniqueCourses.length === 0 ? (
-                                <div className="empty-state" style={{ gridColumn: '1 / -1' }}><div className="empty-icon">📚</div><h3>No courses found</h3><p>Add students to see their courses here.</p></div>
-                            ) : (
+                            {uniqueCourses.length === 0 ? (<div className="empty-state" style={{ gridColumn: '1 / -1' }}><div className="empty-icon">📚</div><h3>No courses found</h3><p>Add students to see their courses here.</p></div>) : (
                                 uniqueCourses.map((course, index) => (
                                     <div className="stat-card" key={index} style={{ flexDirection: 'column', alignItems: 'flex-start' }}>
                                         <div className="stat-icon courses" style={{ marginBottom: '10px' }}>📚</div>
