@@ -14,16 +14,11 @@ const emptyForm = {
 };
 
 function StudentManagement() {
-
     const navigate = useNavigate();
-    
-    // Refs for closing dropdowns on outside click
     const dropdownRef = useRef(null);
     const notificationRef = useRef(null);
 
-    // =========================
     // SESSION USER
-    // =========================
     let user = null;
     try {
         user = JSON.parse(sessionStorage.getItem("studentUser") || "null");
@@ -31,9 +26,14 @@ function StudentManagement() {
         user = null;
     }
 
-    // =========================
-    // STATE
-    // =========================
+    // AGAR USER LOGIN NAHI HAI TO LOGIN PAR BHEJ DEIN
+    useEffect(() => {
+        if (!user) {
+            navigate("/login");
+        }
+    }, [user, navigate]);
+
+    // STATES
     const [students, setStudents] = useState([]);
     const [formData, setFormData] = useState(emptyForm);
     const [editingId, setEditingId] = useState(null);
@@ -43,14 +43,9 @@ function StudentManagement() {
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState("");
     const [activeTab, setActiveTab] = useState("dashboard");
-
-    // Dropdown states
     const [menuOpen, setMenuOpen] = useState(false);
     const [notifOpen, setNotifOpen] = useState(false);
 
-    // =========================
-    // NOTIFICATIONS STATE
-    // =========================
     const [notifications, setNotifications] = useState([
         { id: 1, text: "Welcome to EduManage System!", time: "Just now", read: false }
     ]);
@@ -66,57 +61,39 @@ function StudentManagement() {
     };
 
     const unreadCount = notifications.filter(n => !n.read).length;
-
     const markAllAsRead = () => {
         setNotifications(prev => prev.map(n => ({ ...n, read: true })));
     };
 
-    // =========================
-    // CLOSE DROPDOWNS ON CLICK OUTSIDE
-    // =========================
+    // CLOSE DROPDOWNS
     useEffect(() => {
         function handleClickOutside(event) {
-            if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
-                setMenuOpen(false);
-            }
-            if (notificationRef.current && !notificationRef.current.contains(event.target)) {
-                setNotifOpen(false);
-            }
+            if (dropdownRef.current && !dropdownRef.current.contains(event.target)) setMenuOpen(false);
+            if (notificationRef.current && !notificationRef.current.contains(event.target)) setNotifOpen(false);
         }
         document.addEventListener("mousedown", handleClickOutside);
-        return () => {
-            document.removeEventListener("mousedown", handleClickOutside);
-        };
+        return () => document.removeEventListener("mousedown", handleClickOutside);
     }, []);
 
-    // =========================
-    // LOGOUT & SWITCH
-    // =========================
+    // LOGOUT
     const handleLogout = () => {
         if (!window.confirm("Are you sure you want to logout?")) return;
         sessionStorage.removeItem("studentUser");
-        setMenuOpen(false);
         navigate("/login", { replace: true });
     };
 
-    const handleSwitchAccount = () => {
-        sessionStorage.removeItem("studentUser");
-        setMenuOpen(false);
-        navigate("/register", { replace: true });
-    };
-
-    // =========================
-    // GET ALL STUDENTS
-    // =========================
+    // GET STUDENTS (ONLY FOR LOGGED IN USER)
     const fetchStudents = async () => {
+        if (!user) return;
         try {
             setLoading(true);
             setError("");
-            const response = await axios.get(API_URL);
+            // Ab hum URL mein user.id bhej rahe hain
+            const response = await axios.get(`${API_URL}/user/${user.id}`);
             setStudents(response.data);
         } catch (err) {
             console.error(err);
-            setError("Unable to load students. Make sure backend is running.");
+            setError("Unable to load students. Backend connection error.");
         } finally {
             setLoading(false);
         }
@@ -124,14 +101,12 @@ function StudentManagement() {
 
     useEffect(() => {
         fetchStudents();
-    }, []);
+    }, [user]); // Jab user change ho to data refresh ho
 
-    // =========================
     // FORM HANDLING
-    // =========================
     const handleChange = (e) => {
         const { name, value } = e.target;
-        setFormData((previous) => ({ ...previous, [name]: value }));
+        setFormData(prev => ({ ...prev, [name]: value }));
     };
 
     const openAddForm = () => {
@@ -176,7 +151,8 @@ function StudentManagement() {
                 email: formData.email.trim(),
                 age: formData.age === "" ? null : Number(formData.age),
                 course: formData.course.trim(),
-                phone: formData.phone.trim()
+                phone: formData.phone.trim(),
+                userId: user.id  // YEH LINE SAB SE AHEM HAI
             };
             
             if (editingId !== null) {
@@ -210,9 +186,7 @@ function StudentManagement() {
         }
     };
 
-    // =========================
     // FILTER & STATS
-    // =========================
     const filteredStudents = useMemo(() => {
         const searchText = search.toLowerCase().trim();
         if (!searchText) return students;
@@ -232,13 +206,9 @@ function StudentManagement() {
         : "0";
     const studentsWithPhone = students.filter(s => s.phone && s.phone.trim() !== "").length;
 
-    // =========================
     // RENDER
-    // =========================
     return (
         <div className="dashboard">
-
-            {/* ================= SIDEBAR ================= */}
             <aside className="sidebar">
                 <div className="brand">
                     <div className="brand-icon">🎓</div>
@@ -249,21 +219,10 @@ function StudentManagement() {
                 </div>
 
                 <nav className="navigation">
-                    <button className={`nav-item ${activeTab === 'dashboard' ? 'active' : ''}`} onClick={() => setActiveTab('dashboard')}>
-                        <span>📊</span> Dashboard
-                    </button>
-                    <button className={`nav-item ${activeTab === 'students' ? 'active' : ''}`} onClick={() => setActiveTab('students')}>
-                        <span>👨‍🎓</span> Students
-                    </button>
-                    <button className={`nav-item ${activeTab === 'courses' ? 'active' : ''}`} onClick={() => setActiveTab('courses')}>
-                        <span>📚</span> Courses
-                    </button>
-                    <button className={`nav-item ${activeTab === 'reports' ? 'active' : ''}`} onClick={() => setActiveTab('reports')}>
-                        <span>📈</span> Reports
-                    </button>
-                    <button className={`nav-item ${activeTab === 'settings' ? 'active' : ''}`} onClick={() => setActiveTab('settings')}>
-                        <span>⚙️</span> Settings
-                    </button>
+                    <button className={`nav-item ${activeTab === 'dashboard' ? 'active' : ''}`} onClick={() => setActiveTab('dashboard')}><span>📊</span> Dashboard</button>
+                    <button className={`nav-item ${activeTab === 'students' ? 'active' : ''}`} onClick={() => setActiveTab('students')}><span>👨‍🎓</span> Students</button>
+                    <button className={`nav-item ${activeTab === 'courses' ? 'active' : ''}`} onClick={() => setActiveTab('courses')}><span>📚</span> Courses</button>
+                    <button className={`nav-item ${activeTab === 'reports' ? 'active' : ''}`} onClick={() => setActiveTab('reports')}><span>📈</span> Reports</button>
                 </nav>
 
                 <div className="sidebar-bottom">
@@ -278,10 +237,7 @@ function StudentManagement() {
                 </div>
             </aside>
 
-            {/* ================= MAIN ================= */}
             <main className="main-content">
-
-                {/* ================= TOP BAR ================= */}
                 <header className="topbar">
                     <div>
                         <h1>{activeTab.charAt(0).toUpperCase() + activeTab.slice(1)}</h1>
@@ -290,26 +246,14 @@ function StudentManagement() {
                             {activeTab === 'students' && "View and manage all registered students."}
                             {activeTab === 'courses' && "View all active courses and enrolled students."}
                             {activeTab === 'reports' && "View academic statistics and overview."}
-                            {activeTab === 'settings' && "Manage your account and preferences."}
                         </p>
                     </div>
 
                     <div className="topbar-actions">
-                        
-                        {/* ================= NOTIFICATION BELL ================= */}
                         <div className="notification-wrapper" ref={notificationRef}>
-                            <div 
-                                className="notification" 
-                                onClick={() => {
-                                    setNotifOpen(!notifOpen);
-                                    if (!notifOpen) markAllAsRead(); // Mark read when opened
-                                }}
-                            >
-                                🔔
-                                {unreadCount > 0 && <span className="badge">{unreadCount}</span>}
+                            <div className="notification" onClick={() => { setNotifOpen(!notifOpen); if (!notifOpen) markAllAsRead(); }}>
+                                🔔 {unreadCount > 0 && <span className="badge">{unreadCount}</span>}
                             </div>
-
-                            {/* Notification Dropdown */}
                             {notifOpen && (
                                 <div className="notification-dropdown">
                                     <div className="notif-header">
@@ -317,63 +261,42 @@ function StudentManagement() {
                                         <span>{unreadCount} unread</span>
                                     </div>
                                     <div className="notif-list">
-                                        {notifications.length === 0 ? (
-                                            <div className="notif-empty">No notifications yet.</div>
-                                        ) : (
-                                            notifications.map(n => (
-                                                <div key={n.id} className={`notif-item ${n.read ? 'read' : 'unread'}`}>
-                                                    <div className="notif-icon">🔔</div>
-                                                    <div className="notif-content">
-                                                        <p>{n.text}</p>
-                                                        <small>{n.time}</small>
-                                                    </div>
-                                                </div>
-                                            ))
-                                        )}
+                                        {notifications.map(n => (
+                                            <div key={n.id} className={`notif-item ${n.read ? 'read' : 'unread'}`}>
+                                                <div className="notif-icon">🔔</div>
+                                                <div className="notif-content"><p>{n.text}</p><small>{n.time}</small></div>
+                                            </div>
+                                        ))}
                                     </div>
                                 </div>
                             )}
                         </div>
 
-                        {/* ================= PROFILE DROPDOWN ================= */}
                         <div className="profile" ref={dropdownRef}>
-                            <button className="profile-trigger" onClick={() => setMenuOpen((v) => !v)}>
-                                <div className="avatar">
-                                    {user?.name?.charAt(0)?.toUpperCase() || "U"}
-                                </div>
+                            <button className="profile-trigger" onClick={() => setMenuOpen(v => !v)}>
+                                <div className="avatar">{user?.name?.charAt(0)?.toUpperCase() || "U"}</div>
                                 <div className="profile-info">
                                     <strong>{user?.name || "User"}</strong>
                                     <small>{user?.role || "USER"}</small>
                                 </div>
-                                <span className="chevron">{menuOpen ? "▲" : "▼"}</span>
                             </button>
-
                             {menuOpen && (
                                 <div className="profile-dropdown">
                                     <div className="dropdown-user">
-                                        <div className="dropdown-avatar">
-                                            {user?.name?.charAt(0)?.toUpperCase() || "U"}
-                                        </div>
+                                        <div className="dropdown-avatar">{user?.name?.charAt(0)?.toUpperCase() || "U"}</div>
                                         <div className="dropdown-user-info">
                                             <strong>{user?.name || "User"}</strong>
-                                            <small>{user?.email || "user@example.com"}</small>
+                                            <small>{user?.email}</small>
                                         </div>
                                     </div>
                                     <div className="dropdown-divider"></div>
-                                    <button className="dropdown-item" onClick={handleSwitchAccount}>
-                                        <span className="dropdown-icon">🔄</span> Switch Account
-                                    </button>
-                                    <button className="dropdown-item danger" onClick={handleLogout}>
-                                        <span className="dropdown-icon">🚪</span> Logout
-                                    </button>
+                                    <button className="dropdown-item danger" onClick={handleLogout}>🚪 Logout</button>
                                 </div>
                             )}
                         </div>
-
                     </div>
                 </header>
 
-                {/* ================= ERROR ================= */}
                 {error && (
                     <div className="error-message">
                         <span>⚠️</span><span>{error}</span>
@@ -381,94 +304,39 @@ function StudentManagement() {
                     </div>
                 )}
 
-                {/* ================= TAB CONTENT ================= */}
-
                 {activeTab === 'dashboard' && (
                     <section className="stats-grid">
-                        <div className="stat-card">
-                            <div className="stat-content">
-                                <span className="stat-label">Total Students</span>
-                                <strong className="stat-number">{totalStudents}</strong>
-                                <span className="stat-description">Registered students</span>
-                            </div>
-                            <div className="stat-icon students">👨‍🎓</div>
-                        </div>
-                        <div className="stat-card">
-                            <div className="stat-content">
-                                <span className="stat-label">Total Courses</span>
-                                <strong className="stat-number">{totalCourses}</strong>
-                                <span className="stat-description">Active courses</span>
-                            </div>
-                            <div className="stat-icon courses">📚</div>
-                        </div>
-                        <div className="stat-card">
-                            <div className="stat-content">
-                                <span className="stat-label">Average Age</span>
-                                <strong className="stat-number">{averageAge}</strong>
-                                <span className="stat-description">Years</span>
-                            </div>
-                            <div className="stat-icon age">🎂</div>
-                        </div>
-                        <div className="stat-card">
-                            <div className="stat-content">
-                                <span className="stat-label">Contact Available</span>
-                                <strong className="stat-number">{studentsWithPhone}</strong>
-                                <span className="stat-description">Students with phone</span>
-                            </div>
-                            <div className="stat-icon contact">📱</div>
-                        </div>
+                        <div className="stat-card"><div className="stat-content"><span className="stat-label">Total Students</span><strong className="stat-number">{totalStudents}</strong></div><div className="stat-icon students">👨‍🎓</div></div>
+                        <div className="stat-card"><div className="stat-content"><span className="stat-label">Total Courses</span><strong className="stat-number">{totalCourses}</strong></div><div className="stat-icon courses">📚</div></div>
+                        <div className="stat-card"><div className="stat-content"><span className="stat-label">Average Age</span><strong className="stat-number">{averageAge}</strong></div><div className="stat-icon age">🎂</div></div>
+                        <div className="stat-card"><div className="stat-content"><span className="stat-label">Contact Available</span><strong className="stat-number">{studentsWithPhone}</strong></div><div className="stat-icon contact">📱</div></div>
                     </section>
                 )}
 
                 {activeTab === 'students' && (
-                    <section id="students-section" className="students-section">
+                    <section className="students-section">
                         <div className="section-header">
-                            <div>
-                                <h2>Student Directory</h2>
-                                <p>View and manage all registered students.</p>
-                            </div>
-                            <button className="add-button" onClick={openAddForm}>
-                                <span>＋</span> Add Student
-                            </button>
+                            <div><h2>Student Directory</h2><p>View and manage all registered students.</p></div>
+                            <button className="add-button" onClick={openAddForm}><span>＋</span> Add Student</button>
                         </div>
 
                         {showForm && (
                             <div className="form-card">
                                 <div className="form-header">
-                                    <div>
-                                        <h3>{editingId !== null ? "Update Student" : "Add New Student"}</h3>
-                                        <p>Enter the student's information below.</p>
-                                    </div>
+                                    <div><h3>{editingId !== null ? "Update Student" : "Add New Student"}</h3></div>
                                     <button className="close-button" onClick={closeForm}>×</button>
                                 </div>
                                 <form onSubmit={handleSubmit}>
                                     <div className="form-grid">
-                                        <div className="input-group">
-                                            <label>Student Name *</label>
-                                            <input type="text" name="name" value={formData.name} onChange={handleChange} placeholder="Enter student name" />
-                                        </div>
-                                        <div className="input-group">
-                                            <label>Email *</label>
-                                            <input type="email" name="email" value={formData.email} onChange={handleChange} placeholder="student@example.com" />
-                                        </div>
-                                        <div className="input-group">
-                                            <label>Age</label>
-                                            <input type="number" name="age" min="1" max="100" value={formData.age} onChange={handleChange} placeholder="Enter age" />
-                                        </div>
-                                        <div className="input-group">
-                                            <label>Course *</label>
-                                            <input type="text" name="course" value={formData.course} onChange={handleChange} placeholder="e.g. BS Computer Science" />
-                                        </div>
-                                        <div className="input-group full-width">
-                                            <label>Phone</label>
-                                            <input type="text" name="phone" value={formData.phone} onChange={handleChange} placeholder="Enter phone number" />
-                                        </div>
+                                        <div className="input-group"><label>Name *</label><input type="text" name="name" value={formData.name} onChange={handleChange} required /></div>
+                                        <div className="input-group"><label>Email *</label><input type="email" name="email" value={formData.email} onChange={handleChange} required /></div>
+                                        <div className="input-group"><label>Age</label><input type="number" name="age" value={formData.age} onChange={handleChange} /></div>
+                                        <div className="input-group"><label>Course *</label><input type="text" name="course" value={formData.course} onChange={handleChange} required /></div>
+                                        <div className="input-group full-width"><label>Phone</label><input type="text" name="phone" value={formData.phone} onChange={handleChange} /></div>
                                     </div>
                                     <div className="form-actions">
                                         <button type="button" className="cancel-button" onClick={closeForm}>Cancel</button>
-                                        <button type="submit" className="save-button" disabled={saving}>
-                                            {saving ? "Saving..." : editingId !== null ? "Update Student" : "Save Student"}
-                                        </button>
+                                        <button type="submit" className="save-button" disabled={saving}>{saving ? "Saving..." : "Save"}</button>
                                     </div>
                                 </form>
                             </div>
@@ -476,51 +344,24 @@ function StudentManagement() {
 
                         <div className="table-card">
                             <div className="table-toolbar">
-                                <div>
-                                    <h3>Student List</h3>
-                                    <span>{filteredStudents.length} students</span>
-                                </div>
-                                <div className="search-box">
-                                    <span>🔍</span>
-                                    <input type="text" placeholder="Search students..." value={search} onChange={(e) => setSearch(e.target.value)} />
-                                    {search && <button onClick={() => setSearch("")}>×</button>}
-                                </div>
+                                <div><h3>Student List</h3><span>{filteredStudents.length} students</span></div>
+                                <div className="search-box"><span>🔍</span><input type="text" placeholder="Search..." value={search} onChange={(e) => setSearch(e.target.value)} /></div>
                             </div>
 
                             {loading ? (
-                                <div className="loading-state">
-                                    <div className="spinner"></div>
-                                    <p>Loading students...</p>
-                                </div>
+                                <div className="loading-state"><div className="spinner"></div><p>Loading...</p></div>
                             ) : filteredStudents.length === 0 ? (
-                                <div className="empty-state">
-                                    <div className="empty-icon">👨‍🎓</div>
-                                    <h3>{search ? "No students found" : "No students yet"}</h3>
-                                    <p>{search ? "Try a different search term." : "Add your first student to get started."}</p>
-                                    {!search && <button className="add-button" onClick={openAddForm}>＋ Add Student</button>}
-                                </div>
+                                <div className="empty-state"><div className="empty-icon">👨‍🎓</div><h3>No students yet</h3></div>
                             ) : (
                                 <div className="table-wrapper">
                                     <table>
-                                        <thead>
-                                            <tr>
-                                                <th>#</th><th>Student</th><th>Email</th><th>Course</th><th>Age</th><th>Phone</th><th>Actions</th>
-                                            </tr>
-                                        </thead>
+                                        <thead><tr><th>#</th><th>Student</th><th>Email</th><th>Course</th><th>Age</th><th>Phone</th><th>Actions</th></tr></thead>
                                         <tbody>
                                             {filteredStudents.map((student, index) => (
                                                 <tr key={student.id}>
-                                                    <td className="number-cell">{index + 1}</td>
-                                                    <td>
-                                                        <div className="student-cell">
-                                                            <div className="student-avatar">{student.name?.charAt(0)?.toUpperCase() || "S"}</div>
-                                                            <div>
-                                                                <strong>{student.name}</strong>
-                                                                <small>ID #{student.id}</small>
-                                                            </div>
-                                                        </div>
-                                                    </td>
-                                                    <td><span className="email-text">{student.email}</span></td>
+                                                    <td>{index + 1}</td>
+                                                    <td><div className="student-cell"><div className="student-avatar">{student.name?.charAt(0)?.toUpperCase()}</div><div><strong>{student.name}</strong></div></div></td>
+                                                    <td>{student.email}</td>
                                                     <td><span className="course-badge">{student.course}</span></td>
                                                     <td>{student.age || "-"}</td>
                                                     <td>{student.phone || "-"}</td>
@@ -542,27 +383,13 @@ function StudentManagement() {
 
                 {activeTab === 'courses' && (
                     <section className="students-section">
-                        <div className="section-header">
-                            <div>
-                                <h2>Active Courses</h2>
-                                <p>List of all courses based on registered students.</p>
-                            </div>
-                        </div>
+                        <div className="section-header"><div><h2>Active Courses</h2></div></div>
                         <div className="stats-grid" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))' }}>
-                            {uniqueCourses.length === 0 ? (
-                                <div className="empty-state" style={{ gridColumn: '1 / -1' }}>
-                                    <div className="empty-icon">📚</div>
-                                    <h3>No courses found</h3>
-                                    <p>Add students to see their courses here.</p>
-                                </div>
-                            ) : (
+                            {uniqueCourses.length === 0 ? (<p>No courses found.</p>) : (
                                 uniqueCourses.map((course, index) => (
                                     <div className="stat-card" key={index} style={{ flexDirection: 'column', alignItems: 'flex-start' }}>
-                                        <div className="stat-icon courses" style={{ marginBottom: '10px' }}>📚</div>
-                                        <strong style={{ fontSize: '18px', color: '#111827' }}>{course}</strong>
-                                        <span style={{ fontSize: '12px', color: '#6b7280', marginTop: '4px' }}>
-                                            {students.filter(s => s.course === course).length} Students enrolled
-                                        </span>
+                                        <strong style={{ fontSize: '18px' }}>{course}</strong>
+                                        <span>{students.filter(s => s.course === course).length} Students</span>
                                     </div>
                                 ))
                             )}
@@ -572,64 +399,14 @@ function StudentManagement() {
 
                 {activeTab === 'reports' && (
                     <section className="students-section">
-                        <div className="section-header">
-                            <div>
-                                <h2>Reports Overview</h2>
-                                <p>A summary of your student data.</p>
-                            </div>
-                        </div>
+                        <div className="section-header"><div><h2>Reports Overview</h2></div></div>
                         <div className="table-card" style={{ padding: '30px' }}>
-                            <h3 style={{ marginTop: 0, color: '#111827' }}>System Summary</h3>
-                            <p style={{ color: '#6b7280', fontSize: '14px', lineHeight: '1.8' }}>
-                                You have a total of <strong>{totalStudents}</strong> students registered across <strong>{totalCourses}</strong> different courses. <br/>
-                                The average age of your students is <strong>{averageAge} years</strong>. <br/>
-                                Out of all students, <strong>{studentsWithPhone}</strong> have provided their phone numbers.
-                            </p>
-                            <div style={{ marginTop: '20px', padding: '15px', background: '#f9fafb', borderRadius: '10px', border: '1px solid #e5e7eb' }}>
-                                <p style={{ margin: 0, fontSize: '13px', color: '#4b5563' }}>
-                                    📌 <strong>Tip:</strong> Use the Students tab to add, edit, or remove students. The statistics update automatically!
-                                </p>
-                            </div>
+                            <p>Total Students: <strong>{totalStudents}</strong></p>
+                            <p>Total Courses: <strong>{totalCourses}</strong></p>
+                            <p>Average Age: <strong>{averageAge}</strong></p>
                         </div>
                     </section>
                 )}
-
-                {activeTab === 'settings' && (
-                    <section className="students-section">
-                        <div className="section-header">
-                            <div>
-                                <h2>Account Settings</h2>
-                                <p>Manage your account details and session.</p>
-                            </div>
-                        </div>
-                        <div className="table-card" style={{ padding: '30px' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '20px', marginBottom: '30px' }}>
-                                <div className="avatar" style={{ width: '60px', height: '60px', fontSize: '24px', borderRadius: '15px' }}>
-                                    {user?.name?.charAt(0)?.toUpperCase() || "U"}
-                                </div>
-                                <div>
-                                    <h3 style={{ margin: 0, color: '#111827' }}>{user?.name || "User"}</h3>
-                                    <p style={{ margin: '5px 0 0', color: '#6b7280' }}>{user?.email || "email@example.com"}</p>
-                                    <span className="course-badge" style={{ marginTop: '8px', display: 'inline-block' }}>
-                                        {user?.role || "USER"}
-                                    </span>
-                                </div>
-                            </div>
-
-                            <div className="dropdown-divider" style={{ margin: '20px 0' }}></div>
-
-                            <h4 style={{ margin: '0 0 15px', color: '#111827' }}>Danger Zone</h4>
-                            <button 
-                                className="save-button" 
-                                style={{ background: '#ef4444', padding: '12px 20px', height: 'auto' }}
-                                onClick={handleLogout}
-                            >
-                                🚪 Logout from Account
-                            </button>
-                        </div>
-                    </section>
-                )}
-
             </main>
         </div>
     );

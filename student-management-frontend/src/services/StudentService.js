@@ -3,8 +3,9 @@ import axios from "axios";
 const API_URL = "https://student-management-system-q764.onrender.com/api/students";
 
 const studentService = {
-    getAllStudents: async () => {
-        const response = await axios.get(API_URL);
+    // Ab hum userId pass karenge
+    getAllStudents: async (userId) => {
+        const response = await axios.get(`${API_URL}/user/${userId}`);
         return response.data;
     },
     getStudentById: async (id) => {
