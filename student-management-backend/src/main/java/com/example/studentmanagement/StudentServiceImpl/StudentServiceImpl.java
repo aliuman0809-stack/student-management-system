@@ -24,6 +24,7 @@ public class StudentServiceImpl implements StudentService {
         return studentRepository.findAll();
     }
 
+    // YEH NAYA METHOD HAI
     @Override
     public List<Student> getStudentsByUserId(Long userId) {
         return studentRepository.findByUserId(userId);
@@ -43,7 +44,6 @@ public class StudentServiceImpl implements StudentService {
         existing.setPhone(student.getPhone());
         existing.setAge(student.getAge());
         existing.setCourse(student.getCourse());
-        // user id update nahi karni, wo wahi rahegi
         return studentRepository.save(existing);
     }
 

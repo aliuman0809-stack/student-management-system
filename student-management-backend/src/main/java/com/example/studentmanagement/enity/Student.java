@@ -20,13 +20,12 @@ public class Student {
     private Integer age;
     private String course;
 
-    // YEH NAYA FIELD ADD HUA HAI
+    // YEH NAYA FIELD ADD HUA HAI (Jis se pata chalega student kis user ka hai)
     @Column(name = "user_id")
     private Long userId;
 
     public Student() {}
 
-    // Getters and Setters
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
 

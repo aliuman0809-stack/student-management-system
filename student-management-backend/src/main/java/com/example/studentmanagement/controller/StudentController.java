@@ -19,7 +19,7 @@ public class StudentController {
         this.studentService = studentService;
     }
 
-    // Naya Endpoint: Sirf us user ke students layega
+    // YEH NAYA ENDPOINT HAI (Jo frontend dhoond raha hai)
     @GetMapping("/user/{userId}")
     public ResponseEntity<List<Student>> getStudentsByUserId(@PathVariable Long userId) {
         return ResponseEntity.ok(studentService.getStudentsByUserId(userId));
