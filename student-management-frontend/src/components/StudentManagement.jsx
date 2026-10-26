@@ -3,7 +3,7 @@ import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import "./StudentManagement.css";
 
-const API_URL = "http://localhost:8082/api/students";
+const API_URL = "https://student-management-system-q764.onrender.com/api/students";
 
 const emptyForm = {
     name: "",

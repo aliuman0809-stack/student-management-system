@@ -1,6 +1,6 @@
 import axios from "axios";
 
-const API_URL = "http://localhost:8082/api/students";
+const API_URL = "https://student-management-system-q764.onrender.com/api/students";
 
 const studentService = {
 

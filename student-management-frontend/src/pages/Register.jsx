@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 
-const API_URL = "http://localhost:8082/api/auth";
+const API_URL = "https://student-management-system-q764.onrender.com/api/auth";
 
 export default function Register() {
   const navigate = useNavigate();
