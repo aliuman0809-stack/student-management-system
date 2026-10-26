@@ -16,7 +16,6 @@ export default function Login() {
 
   function handleChange(event) {
     const { name, value } = event.target;
-
     setForm((previous) => ({
       ...previous,
       [name]: value,
@@ -54,7 +53,6 @@ export default function Login() {
         );
       }
 
-      // Sirf display information save hoti hai, password nahi.
       sessionStorage.setItem(
         "studentUser",
         JSON.stringify({
@@ -65,13 +63,10 @@ export default function Login() {
         })
       );
 
-      // ✅ YAHAN CHANGE KIYA HAI
       navigate("/students");
     } catch (err) {
       if (err instanceof TypeError) {
-        setError(
-          "Backend se connection nahi ho raha. Spring Boot port 8082 check karein."
-        );
+        setError("Server se connection nahi ho raha. Render wake up ho raha hoga, 1 minute baad try karein.");
       } else {
         setError(err.message || "Login failed.");
       }

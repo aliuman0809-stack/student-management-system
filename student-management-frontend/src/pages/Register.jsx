@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 
@@ -19,7 +18,6 @@ export default function Register() {
 
   function handleChange(event) {
     const { name, value } = event.target;
-
     setForm((previous) => ({
       ...previous,
       [name]: value,
@@ -28,7 +26,6 @@ export default function Register() {
 
   async function handleSubmit(event) {
     event.preventDefault();
-
     setMessage("");
     setError("");
 
@@ -67,21 +64,14 @@ export default function Register() {
       }
 
       setMessage("Registration successful! Redirecting to login...");
-
-      setForm({
-        name: "",
-        email: "",
-        password: "",
-      });
+      setForm({ name: "", email: "", password: "" });
 
       setTimeout(() => {
         navigate("/login");
       }, 1000);
     } catch (err) {
       if (err instanceof TypeError) {
-        setError(
-          "Backend se connection nahi ho raha. Check karein ke Spring Boot port 8082 par running hai."
-        );
+        setError("Server se connection nahi ho raha. Render wake up ho raha hoga, 1 minute baad try karein.");
       } else {
         setError(err.message || "Registration failed.");
       }
