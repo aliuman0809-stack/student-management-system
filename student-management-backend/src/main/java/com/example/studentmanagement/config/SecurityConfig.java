@@ -21,16 +21,20 @@ public class SecurityConfig {
     }
 
     @Bean
-    public SecurityFilterChain securityFilterChain(
-            HttpSecurity http) throws Exception {
+    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
 
         http
                 .csrf(csrf -> csrf.disable())
-                .cors(cors -> cors.configurationSource(
-                        corsConfigurationSource()))
+                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/auth/**").permitAll()
-                        .anyRequest().permitAll()
+                        // API endpoints allow karein
+                        .requestMatchers("/api/**").permitAll()
+                        .anyRequest().authenticated()
+                )
+                // GOOGLE LOGIN CONFIGURATION
+                .oauth2Login(oauth -> oauth
+                        // Jab Google se login ho jaye, to user ko wapas aapki Vercel website par bhej dein
+                        .defaultSuccessUrl("https://student-management-system-six-umber.vercel.app/oauth-success", true)
                 );
 
         return http.build();
@@ -39,17 +43,11 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
-
-        // YAHAN TABDEELI HUI HAI
         config.setAllowedOrigins(List.of("*"));
-
-        config.setAllowedMethods(
-                List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         config.setAllowedHeaders(List.of("*"));
 
-        UrlBasedCorsConfigurationSource source =
-                new UrlBasedCorsConfigurationSource();
-
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", config);
         return source;
     }
