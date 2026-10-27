@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { GoogleLogin } from '@react-oauth/google';
 
 const API_URL = "https://student-management-system-q764.onrender.com/api/auth";
 
@@ -118,6 +119,20 @@ export default function Login() {
             {loading ? "Logging In..." : "Login"}
           </button>
         </form>
+
+        {/* GOOGLE LOGIN BUTTON */}
+        <div style={{ marginTop: '20px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+          <p style={{ color: '#94a3b8', fontSize: '13px', marginBottom: '10px' }}>Or continue with</p>
+          <GoogleLogin
+            onSuccess={() => {
+              // Seedha backend ke Google login URL par bhej dein
+              window.location.href = "https://student-management-system-q764.onrender.com/oauth2/authorization/google";
+            }}
+            onError={() => setError("Google Login Failed.")}
+            shape="pill"
+            theme="filled_blue"
+          />
+        </div>
 
         <p className="auth-footer">
           Don't have an account? <Link to="/register">Register here</Link>
