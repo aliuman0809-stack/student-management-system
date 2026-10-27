@@ -48,7 +48,7 @@ export default function Login() {
           data.error ||
           data.title ||
           (response.status === 401
-            ? "Email ya password ghalat hai."
+            ? "Invalid email or password."
             : `Login failed (${response.status}).`)
         );
       }
@@ -66,7 +66,7 @@ export default function Login() {
       navigate("/students");
     } catch (err) {
       if (err instanceof TypeError) {
-        setError("Server se connection nahi ho raha. Render wake up ho raha hoga, 1 minute baad try karein.");
+        setError("Cannot connect to the server. The backend might be waking up. Please try again in 1 minute.");
       } else {
         setError(err.message || "Login failed.");
       }
@@ -80,7 +80,7 @@ export default function Login() {
       <section className="auth-card">
         <h1>Welcome Back</h1>
         <p className="auth-subtitle">
-          Apne Student Management account mein login karein.
+          Sign in to your Student Management account.
         </p>
 
         {error && (

@@ -71,7 +71,7 @@ export default function Register() {
       }, 1000);
     } catch (err) {
       if (err instanceof TypeError) {
-        setError("Server se connection nahi ho raha. Render wake up ho raha hoga, 1 minute baad try karein.");
+        setError("Cannot connect to the server. The backend might be waking up. Please try again in 1 minute.");
       } else {
         setError(err.message || "Registration failed.");
       }
@@ -85,7 +85,7 @@ export default function Register() {
       <section className="auth-card">
         <h1>Create Account</h1>
         <p className="auth-subtitle">
-          Student Management System mein register karein.
+          Register for the Student Management System.
         </p>
 
         {message && (
@@ -130,7 +130,7 @@ export default function Register() {
             id="register-password"
             name="password"
             type="password"
-            placeholder="Create a password"
+            placeholder="Create a password (min 8 characters)"
             value={form.password}
             onChange={handleChange}
             autoComplete="new-password"
